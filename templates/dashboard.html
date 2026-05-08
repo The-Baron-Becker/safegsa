@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Dashboard demo · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl px-6 py-10">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <div class="text-xs uppercase tracking-wider text-navy-900/60">Demo workspace</div>
+      <h1 class="font-display text-3xl md:text-4xl font-semibold tracking-tight">{{ d.contract }}</h1>
+      <p class="text-sm text-navy-900/70 mt-1">Three AI systems attached · next on-site audit {{ d.next_audit }}</p>
+    </div>
+    <a href="/" class="text-sm text-navy-900 hover:text-flag-red">← Back to overview</a>
+  </div>
+
+  <div class="mt-8 grid gap-4 md:grid-cols-3">
+    <div class="rounded-xl border border-navy-900/10 bg-white p-5">
+      <div class="text-xs uppercase tracking-wider text-navy-900/60">Compliance score</div>
+      <div class="mt-1 flex items-baseline gap-2">
+        <div class="font-display text-4xl font-semibold">{{ d.score }}<span class="text-base text-navy-900/60">/100</span></div>
+        <div class="text-xs font-medium text-emerald-700">{{ d.trend }}</div>
+      </div>
+      <div class="mt-3 h-2 rounded-full bg-sand-200 overflow-hidden">
+        <div class="h-full bg-emerald-600" style="width: {{ d.score }}%"></div>
+      </div>
+    </div>
+    <div class="rounded-xl border border-navy-900/10 bg-white p-5">
+      <div class="text-xs uppercase tracking-wider text-navy-900/60">Open findings</div>
+      <div class="mt-1 font-display text-4xl font-semibold">2</div>
+      <div class="text-xs text-navy-900/60 mt-1">All on Procurement Document Summarizer</div>
+    </div>
+    <div class="rounded-xl border border-navy-900/10 bg-white p-5">
+      <div class="text-xs uppercase tracking-wider text-navy-900/60">Days until next audit</div>
+      <div class="mt-1 font-display text-4xl font-semibold">99</div>
+      <div class="text-xs text-navy-900/60 mt-1">GSA on-site, contract {{ d.contract.split(' ')[0] }}</div>
+    </div>
+  </div>
+
+  <section class="mt-10">
+    <div class="flex items-baseline justify-between">
+      <h2 class="font-display text-2xl font-semibold">AI system inventory</h2>
+      <a href="/assess" class="text-sm text-flag-red hover:underline">+ Add system</a>
+    </div>
+    <div class="mt-4 overflow-hidden rounded-xl border border-navy-900/10 bg-white">
+      <table class="w-full text-sm">
+        <thead class="bg-sand-100 text-navy-900/70">
+          <tr>
+            <th class="text-left font-medium px-4 py-3">System</th>
+            <th class="text-left font-medium px-4 py-3">Tier</th>
+            <th class="text-left font-medium px-4 py-3">Owner</th>
+            <th class="text-left font-medium px-4 py-3">Status</th>
+            <th class="text-left font-medium px-4 py-3">Drift</th>
+            <th class="text-left font-medium px-4 py-3">Last attested</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-navy-900/5">
+          {% for s in d.systems %}
+          <tr>
+            <td class="px-4 py-3 font-medium">{{ s.name }}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                {% if s.tier_class == 'high' %}bg-flag-red/10 text-flag-red{% elif s.tier_class == 'limited' %}bg-amber-100 text-amber-800{% elif s.tier_class == 'critical' %}bg-red-700 text-white{% else %}bg-emerald-100 text-emerald-800{% endif %}">{{ s.tier }}</span>
+            </td>
+            <td class="px-4 py-3 text-navy-900/80">{{ s.owner }}</td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-1 text-xs font-medium {% if s.status_class == 'ok' %}text-emerald-700{% elif s.status_class == 'warn' %}text-amber-700{% else %}text-flag-red{% endif %}">
+                <span class="inline-block h-1.5 w-1.5 rounded-full {% if s.status_class == 'ok' %}bg-emerald-500{% elif s.status_class == 'warn' %}bg-amber-500{% else %}bg-flag-red{% endif %}"></span>
+                {{ s.status }}
+              </span>
+            </td>
+            <td class="px-4 py-3 tabular-nums">{{ s.drift }}</td>
+            <td class="px-4 py-3 text-navy-900/70">{{ s.last_attested }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="mt-10 grid lg:grid-cols-2 gap-6">
+    <section>
+      <h2 class="font-display text-2xl font-semibold">Audit trail</h2>
+      <ol class="mt-4 space-y-3">
+        {% for e in d.audit_events %}
+        <li class="rounded-lg border border-navy-900/10 bg-white p-4 text-sm">
+          <div class="flex items-baseline justify-between">
+            <span class="font-medium">{{ e.event }}</span>
+            <span class="text-xs text-navy-900/50 whitespace-nowrap ml-3">{{ e.at }}</span>
+          </div>
+          <div class="text-xs text-navy-900/60 mt-1">by {{ e.actor }}</div>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    <section>
+      <h2 class="font-display text-2xl font-semibold">Upcoming deadlines</h2>
+      <ul class="mt-4 space-y-3">
+        {% for d_item in d.deadlines %}
+        <li class="rounded-lg border border-navy-900/10 bg-white p-4 text-sm flex items-center justify-between">
+          <span class="font-medium">{{ d_item.what }}</span>
+          <span class="text-xs font-semibold text-flag-red">{{ d_item.due }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

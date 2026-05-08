@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong · {{ app_name }}{% endblock %}
+{% block content %}
+<section class="mx-auto max-w-3xl px-6 py-24 text-center">
+  <div class="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white/70 px-3 py-1 text-xs font-medium text-navy-900">
+    <span class="inline-block h-1.5 w-1.5 rounded-full bg-flag-red"></span>
+    HTTP 500 · Server error
+  </div>
+  <h1 class="mt-6 font-display text-4xl md:text-5xl font-semibold tracking-tight">Something glitched on our end.</h1>
+  <p class="mt-4 text-navy-900/75">
+    The error has been logged. Try again in a moment, or send the timestamp to support and we'll trace it.
+  </p>
+  <div class="mt-8 flex flex-wrap justify-center gap-3">
+    <a href="/" class="inline-flex items-center rounded-md bg-navy-900 px-5 py-3 text-sand-50 font-medium hover:bg-navy-700">Back to home</a>
+    <a href="/health" class="inline-flex items-center rounded-md border border-navy-900/20 bg-white px-5 py-3 text-navy-900 font-medium hover:border-navy-900/40">Service status →</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,16 @@
+services:
+  safegsa:
+    build: .
+    image: safegsa:latest
+    container_name: safegsa
+    ports:
+      - "3848:8000"
+    environment:
+      - PORT=8000
+      - SAFEGSA_DATA_DIR=/app/data
+    volumes:
+      - safegsa-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  safegsa-data:

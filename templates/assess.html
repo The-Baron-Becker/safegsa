@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Risk assessment · {{ app_name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl px-6 py-12">
+  <div class="text-xs uppercase tracking-wider text-navy-900/60">Self-assessment</div>
+  <h1 class="font-display text-3xl md:text-4xl font-semibold tracking-tight">90-second AI risk classifier</h1>
+  <p class="mt-3 text-navy-900/75">Answer four questions about how your AI system is deployed. We map your answers to a risk tier under GSAR 552.239-7001 and the NIST AI RMF, then list the artifacts your contract requires you to produce.</p>
+
+  <form id="assess-form" class="mt-8 space-y-6">
+    {% for q in questions %}
+    <fieldset class="rounded-xl border border-navy-900/10 bg-white p-5">
+      <legend class="font-display text-lg font-semibold px-1">{{ loop.index }}. {{ q.label }}</legend>
+      <div class="mt-3 grid sm:grid-cols-2 gap-2">
+        {% for opt in q.options %}
+        <label class="flex items-start gap-3 rounded-lg border border-navy-900/10 p-3 cursor-pointer hover:border-navy-900/40 has-[:checked]:border-flag-red has-[:checked]:bg-flag-red/5">
+          <input type="radio" name="{{ q.id }}" value="{{ opt.value }}" required class="mt-1" />
+          <span class="text-sm">{{ opt.label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    {% endfor %}
+
+    <button type="submit" class="inline-flex items-center rounded-md bg-navy-900 px-5 py-3 text-sand-50 font-medium hover:bg-navy-700">Classify my system →</button>
+  </form>
+
+  <section id="result" hidden class="mt-10 rounded-xl border-2 border-navy-900/15 bg-white p-6">
+    <div class="flex items-baseline justify-between gap-4 flex-wrap">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-navy-900/60">Result</div>
+        <h2 class="font-display text-3xl font-semibold mt-1">Tier: <span id="result-tier"></span></h2>
+        <p id="result-summary" class="mt-2 text-navy-900/75 max-w-prose text-sm"></p>
+      </div>
+      <div class="text-right">
+        <div class="text-xs uppercase tracking-wider text-navy-900/60">Score</div>
+        <div id="result-score" class="font-display text-4xl font-semibold"></div>
+      </div>
+    </div>
+
+    <h3 class="mt-6 font-semibold">Required artifacts under your tier</h3>
+    <ul id="result-artifacts" class="mt-3 grid sm:grid-cols-2 gap-2 text-sm"></ul>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a href="/#contact" class="inline-flex items-center rounded-md bg-flag-red px-5 py-3 text-white font-medium hover:bg-red-700">Get help producing these</a>
+      <a href="/dashboard" class="inline-flex items-center rounded-md border border-navy-900/20 bg-white px-5 py-3 text-navy-900 font-medium hover:border-navy-900/40">See them in the dashboard demo →</a>
+    </div>
+  </section>
+</div>
+
+<script>
+  (function () {
+    const form = document.getElementById('assess-form');
+    const result = document.getElementById('result');
+    const tierEl = document.getElementById('result-tier');
+    const scoreEl = document.getElementById('result-score');
+    const summaryEl = document.getElementById('result-summary');
+    const artifactsEl = document.getElementById('result-artifacts');
+    const tierColors = {
+      Low: 'text-emerald-700',
+      Limited: 'text-amber-700',
+      High: 'text-flag-red',
+      Critical: 'text-red-800',
+    };
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const answers = {};
+      for (const [k, v] of data.entries()) answers[k] = v;
+      const res = await fetch('/api/assess', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ answers }),
+      });
+      const body = await res.json();
+      if (!body.ok) return;
+      const r = body.result;
+      tierEl.textContent = r.tier;
+      tierEl.className = tierColors[r.tier] || '';
+      scoreEl.textContent = r.score;
+      summaryEl.textContent = r.summary;
+      artifactsEl.innerHTML = '';
+      r.artifacts.forEach((a) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start gap-2 p-3 rounded-lg border ' + (a.applies ? 'border-flag-red/30 bg-flag-red/5' : 'border-navy-900/10 bg-sand-50 opacity-60');
+        li.innerHTML = (a.applies ? '<span class="text-flag-red">●</span>' : '<span class="text-navy-900/40">○</span>') +
+          ' <span><span class="font-medium">' + a.name + '</span><br><span class="text-xs text-navy-900/60">Required at ' + a.required_at + ' tier and above</span></span>';
+        artifactsEl.appendChild(li);
+      });
+      result.hidden = false;
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  })();
+</script>
+{% endblock %}

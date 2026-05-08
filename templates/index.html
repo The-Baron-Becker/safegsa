@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-sand-50 via-sand-100 to-sand-200/70"></div>
+  <div class="relative mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
+    <div class="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white/70 px-3 py-1 text-xs font-medium text-navy-900">
+      <span class="inline-block h-1.5 w-1.5 rounded-full bg-flag-red"></span>
+      GSAR 552.239-7001 enforcement begins for new MAS contracts
+    </div>
+    <h1 class="mt-5 max-w-3xl font-display text-4xl md:text-6xl font-semibold tracking-tight leading-[1.05]">
+      Audit-ready AI compliance — without standing up a compliance team.
+    </h1>
+    <p class="mt-5 max-w-2xl text-lg text-navy-900/75">
+      {{ app_name }} auto-generates the documentation, monitors AI systems against safeguarding requirements, and produces the audit trails that GSA, DoD, and agency POs are starting to ask for. Designed for the small and mid-size GovCon firm that just won an AI rider on its MAS contract and has 90 days to prove safeguarding.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="#contact" class="inline-flex items-center rounded-md bg-navy-900 px-5 py-3 text-sand-50 font-medium hover:bg-navy-700">Request a briefing</a>
+      <a href="/assess" class="inline-flex items-center rounded-md border border-navy-900/20 bg-white px-5 py-3 text-navy-900 font-medium hover:border-navy-900/40">Run a 90-second self-assessment →</a>
+    </div>
+    <dl class="mt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl">
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-navy-900/60">Genesis Mission</dt>
+        <dd class="mt-1 font-display text-2xl">$293M</dd>
+        <p class="text-xs text-navy-900/60">DOE AI procurement open Apr 28, 2026</p>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-navy-900/60">New clause</dt>
+        <dd class="mt-1 font-display text-2xl">552.239-7001</dd>
+        <p class="text-xs text-navy-900/60">GSAR AI safeguarding · March 2026</p>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-navy-900/60">Frameworks</dt>
+        <dd class="mt-1 font-display text-2xl">4</dd>
+        <p class="text-xs text-navy-900/60">GSAR · NIST AI RMF · EO 14110 · OMB M-24-10</p>
+      </div>
+      <div>
+        <dt class="text-xs uppercase tracking-wider text-navy-900/60">Time to first artifact</dt>
+        <dd class="mt-1 font-display text-2xl">&lt; 1 day</dd>
+        <p class="text-xs text-navy-900/60">From kickoff to draft model card + use-case inventory</p>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<section id="why" class="border-t border-navy-900/10 bg-white">
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+    <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-tight">Why this is suddenly urgent</h2>
+    <div class="mt-8 grid md:grid-cols-3 gap-6">
+      <article class="rounded-xl border border-navy-900/10 bg-sand-50 p-6">
+        <div class="text-xs uppercase tracking-wider text-flag-red font-semibold">March 2026</div>
+        <h3 class="mt-2 font-display text-xl font-semibold">GSAR 552.239-7001 published</h3>
+        <p class="mt-2 text-sm text-navy-900/75">GSA's draft AI safeguarding clause flows down to every Multiple Award Schedule contract. Contractors have to attest to documentation, monitoring, and incident response.</p>
+      </article>
+      <article class="rounded-xl border border-navy-900/10 bg-sand-50 p-6">
+        <div class="text-xs uppercase tracking-wider text-flag-red font-semibold">$293M open now</div>
+        <h3 class="mt-2 font-display text-xl font-semibold">DOE Genesis Mission</h3>
+        <p class="mt-2 text-sm text-navy-900/75">Applications due Apr 28, 2026 with strict compliance gates. Bidders without a documented safeguarding posture screen out before technical evaluation.</p>
+      </article>
+      <article class="rounded-xl border border-navy-900/10 bg-sand-50 p-6">
+        <div class="text-xs uppercase tracking-wider text-flag-red font-semibold">No tooling</div>
+        <h3 class="mt-2 font-display text-xl font-semibold">Vanta is built for SOC 2</h3>
+        <p class="mt-2 text-sm text-navy-900/75">Existing GRC platforms cover SOC 2 / ISO / FedRAMP but none ship the AI-specific artifacts (model cards, drift monitoring, training-data provenance) that the new clause requires.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="border-t border-navy-900/10">
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+    <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-tight">How {{ app_name }} works</h2>
+    <ol class="mt-10 grid md:grid-cols-3 gap-6">
+      <li class="rounded-xl bg-white border border-navy-900/10 p-6">
+        <div class="font-display text-3xl text-flag-red">01</div>
+        <h3 class="mt-2 font-display text-xl font-semibold">Inventory your AI systems</h3>
+        <p class="mt-2 text-sm text-navy-900/75">Connect via MCP or upload a CSV. We classify each system against GSAR + NIST AI RMF risk tiers and surface the artifacts you owe.</p>
+      </li>
+      <li class="rounded-xl bg-white border border-navy-900/10 p-6">
+        <div class="font-display text-3xl text-flag-red">02</div>
+        <h3 class="mt-2 font-display text-xl font-semibold">Generate documentation</h3>
+        <p class="mt-2 text-sm text-navy-900/75">Model cards, use-case inventory entries, bias-testing reports, monitoring plans, ATO packages — drafted from your inputs, reviewed by your subject matter experts.</p>
+      </li>
+      <li class="rounded-xl bg-white border border-navy-900/10 p-6">
+        <div class="font-display text-3xl text-flag-red">03</div>
+        <h3 class="mt-2 font-display text-xl font-semibold">Monitor + attest continuously</h3>
+        <p class="mt-2 text-sm text-navy-900/75">Drift detection, incident logging, quarterly attestations, and an audit-ready evidence locker your CO can read without your help.</p>
+      </li>
+    </ol>
+    <div class="mt-10 rounded-xl border border-navy-900/15 bg-white p-6 md:p-8 grid md:grid-cols-[1fr_auto] gap-6 items-center">
+      <div>
+        <div class="text-xs uppercase tracking-wider text-navy-900/60">See it live</div>
+        <h3 class="font-display text-2xl mt-1 font-semibold">Walk the demo dashboard</h3>
+        <p class="mt-1 text-sm text-navy-900/75 max-w-xl">Three sample AI systems attached to a Treasury contract, with risk tiers, drift scores, audit log, and upcoming attestation deadlines.</p>
+      </div>
+      <a href="/dashboard" class="inline-flex items-center rounded-md bg-navy-900 px-5 py-3 text-sand-50 font-medium hover:bg-navy-700 whitespace-nowrap">Open the dashboard demo →</a>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="border-t border-navy-900/10 bg-navy-900 text-sand-50">
+  <div class="mx-auto max-w-3xl px-6 py-16 md:py-20 text-center">
+    <h2 class="font-display text-3xl md:text-4xl font-semibold tracking-tight">Get a 30-minute readiness briefing</h2>
+    <p class="mt-3 text-sand-100/80">We'll review your active contracts, flag the artifacts you owe under the new GSAR clause, and hand you a draft use-case inventory you can ship to your CO.</p>
+    <form id="lead-form" class="mt-8 grid sm:grid-cols-3 gap-3 text-left">
+      <div class="absolute -left-[10000px] -top-[10000px]" aria-hidden="true">
+        <label>Company name<input id="lead-honeypot" type="text" tabindex="-1" autocomplete="off" /></label>
+      </div>
+      <label class="text-sm text-sand-100/80 sm:col-span-1">
+        <span class="block mb-1">Work email</span>
+        <input id="lead-email" type="email" required class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sand-50 placeholder:text-sand-100/40 focus:outline-none focus:ring-2 focus:ring-white/40" placeholder="cto@yourgovcon.com" />
+      </label>
+      <label class="text-sm text-sand-100/80 sm:col-span-1">
+        <span class="block mb-1">Organization</span>
+        <input id="lead-org" type="text" class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sand-50 placeholder:text-sand-100/40 focus:outline-none focus:ring-2 focus:ring-white/40" placeholder="Your prime / sub" />
+      </label>
+      <label class="text-sm text-sand-100/80 sm:col-span-1">
+        <span class="block mb-1">Role</span>
+        <input id="lead-role" type="text" class="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sand-50 placeholder:text-sand-100/40 focus:outline-none focus:ring-2 focus:ring-white/40" placeholder="VP Compliance, CISO, …" />
+      </label>
+      <button type="submit" class="sm:col-span-3 mt-2 inline-flex justify-center items-center rounded-md bg-flag-red px-5 py-3 font-medium hover:bg-red-700">Book my briefing</button>
+      <p id="lead-msg" role="status" aria-live="polite" class="sm:col-span-3 text-sm min-h-[1.25rem] text-sand-100/70"></p>
+    </form>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const f = document.getElementById('lead-form');
+    if (!f) return;
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('lead-msg');
+      msg.textContent = 'Sending…';
+      try {
+        const res = await fetch('/api/lead', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('lead-email').value,
+            organization: document.getElementById('lead-org').value,
+            role: document.getElementById('lead-role').value,
+            company_name: document.getElementById('lead-honeypot').value,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          msg.textContent = "On the calendar — we'll reach out within one business day.";
+          msg.className = 'sm:col-span-3 text-sm min-h-[1.25rem] text-emerald-300';
+          f.reset();
+        } else {
+          msg.textContent = (data && data.error) || 'Something went wrong.';
+          msg.className = 'sm:col-span-3 text-sm min-h-[1.25rem] text-red-300';
+        }
+      } catch (err) {
+        msg.textContent = 'Network error. Try again?';
+        msg.className = 'sm:col-span-3 text-sm min-h-[1.25rem] text-red-300';
+      }
+    });
+  })();
+</script>
+{% endblock %}

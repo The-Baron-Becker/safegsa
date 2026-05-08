@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ app_name }} — Federal AI Compliance Toolkit{% endblock %}</title>
+  <meta name="description" content="Documentation, monitoring, and audit-ready artifacts for federal AI contractors. Aligned with GSAR 552.239-7001, NIST AI RMF, and EO 14110." />
+  <meta name="theme-color" content="#0a2540" />
+  <link rel="canonical" href="{{ request.url }}" />
+
+  {# Open Graph / Twitter — federal-procurement audience expects a polished link preview #}
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="{{ app_name }}" />
+  <meta property="og:title" content="{% block og_title %}{{ app_name }} — Federal AI Compliance Toolkit{% endblock %}" />
+  <meta property="og:description" content="{% block og_description %}Audit-ready artifacts for AI safeguarding under GSAR 552.239-7001, NIST AI RMF, and EO 14110.{% endblock %}" />
+  <meta property="og:url" content="{{ request.url }}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ self.og_title() }}" />
+  <meta name="twitter:description" content="{{ self.og_description() }}" />
+
+  {# JSON-LD: declares this as a SoftwareApplication so search engines render rich results. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "{{ app_name }}",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "description": "Federal AI compliance toolkit aligned with GSAR 552.239-7001, NIST AI RMF, and EO 14110.",
+    "audience": { "@type": "Audience", "audienceType": "Federal contractors" }
+  }
+  </script>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: { 950: '#06182d', 900: '#0a2540', 800: '#0f3055', 700: '#143a6a' },
+            sand: { 50: '#f8f6f1', 100: '#efe9dc', 200: '#dccdb1' },
+            flag: { red: '#b22234', blue: '#3c3b6e' },
+          },
+          fontFamily: {
+            sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+            display: ['ui-serif', 'Georgia', 'Cambria', 'Times', 'serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}" />
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml" />
+</head>
+<body class="min-h-full bg-sand-50 text-navy-950 antialiased flex flex-col">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-navy-900 focus:text-sand-50 focus:px-4 focus:py-2 focus:text-sm">Skip to content</a>
+
+  <header class="border-b border-navy-900/10 bg-sand-50/95 backdrop-blur sticky top-0 z-30">
+    <div class="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <span class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-navy-900 text-sand-50 font-display text-lg font-bold tracking-tight">S</span>
+        <div class="leading-tight">
+          <div class="font-display text-lg font-semibold tracking-tight">{{ app_name }}</div>
+          <div class="text-xs text-navy-900/60">Federal AI Compliance Toolkit</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium">
+        <a href="/#why" class="hover:text-flag-red">Why now</a>
+        <a href="/#how" class="hover:text-flag-red">How it works</a>
+        <a href="/dashboard" class="hover:text-flag-red">Dashboard demo</a>
+        <a href="/assess" class="hover:text-flag-red">Risk assessment</a>
+        <a href="/#contact" class="inline-flex items-center rounded-md bg-navy-900 px-4 py-2 text-sand-50 hover:bg-navy-700">Request a briefing</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="flex-1">{% block content %}{% endblock %}</main>
+
+  <footer class="border-t border-navy-900/10 bg-navy-950 text-sand-100">
+    <div class="mx-auto max-w-6xl px-6 py-10 grid gap-8 md:grid-cols-4 text-sm">
+      <div class="md:col-span-2">
+        <div class="font-display text-lg font-semibold">{{ app_name }}</div>
+        <p class="mt-2 text-sand-100/70 max-w-md">Built for the small and mid-size GovCon firms scrambling to comply with new federal AI safeguarding mandates without standing up an in-house compliance team.</p>
+      </div>
+      <div>
+        <div class="font-semibold">Product</div>
+        <ul class="mt-2 space-y-1 text-sand-100/70">
+          <li><a href="/#how" class="hover:text-white">How it works</a></li>
+          <li><a href="/dashboard" class="hover:text-white">Dashboard demo</a></li>
+          <li><a href="/assess" class="hover:text-white">Risk assessment</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold">Frameworks</div>
+        <ul class="mt-2 space-y-1 text-sand-100/70">
+          <li>GSAR 552.239-7001</li>
+          <li>NIST AI RMF 1.0</li>
+          <li>EO 14110 §10</li>
+          <li>OMB M-24-10</li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/10 py-4 text-center text-xs text-sand-100/50">© 2026 {{ app_name }} · Disclaimer: this MVP renders informational guidance only and is not legal advice.</div>
+  </footer>
+</body>
+</html>

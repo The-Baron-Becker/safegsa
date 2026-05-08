@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FedAIComply — AI Compliance Toolkit for Federal Contractors</title>
+<meta name="description" content="Compliance-as-a-service for federal AI contractors. Auto-generate documentation, monitor AI systems for safeguarding, and produce GSAR 552.239-7001 audit trails on demand." />
+<meta name="theme-color" content="#0b1220" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230b1220'/%3E%3Cpath d='M14 30 L32 14 L50 30 L50 50 L14 50 Z' fill='none' stroke='%2360a5fa' stroke-width='3'/%3E%3Cpath d='M22 38 L29 45 L42 30' fill='none' stroke='%2334d399' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js"></script>
+<style>
+  body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial}
+  .grid-bg{background-image:radial-gradient(rgba(96,165,250,.12) 1px,transparent 1px);background-size:24px 24px}
+  .gradient-text{background:linear-gradient(90deg,#60a5fa,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased">
+
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:bg-emerald-500 focus:text-slate-950 focus:px-3 focus:py-2 focus:rounded">Skip to content</a>
+
+<!-- Top notice bar -->
+<div class="bg-emerald-500/10 text-emerald-300 text-xs sm:text-sm border-b border-emerald-500/20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
+    <p>GSAR 552.239-7001 enforcement begins <span class="font-semibold text-emerald-200">June 1, 2026</span> — get audit-ready in 14 days.</p>
+    <a href="#cta" class="hidden sm:inline-flex text-emerald-200 hover:text-white underline underline-offset-4">Start free assessment →</a>
+  </div>
+</div>
+
+<!-- Header -->
+<header x-data="{open:false}" class="sticky top-0 z-30 bg-slate-950/80 backdrop-blur border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2 group" aria-label="FedAIComply home">
+      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-emerald-400 text-slate-950 font-black">F</span>
+      <span class="font-semibold tracking-tight">FedAIComply</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-7 text-sm text-slate-300">
+      <a href="#problem" class="hover:text-white">Why now</a>
+      <a href="#features" class="hover:text-white">Platform</a>
+      <a href="#dashboard" class="hover:text-white">Live demo</a>
+      <a href="#pricing" class="hover:text-white">Pricing</a>
+      <a href="#faq" class="hover:text-white">FAQ</a>
+    </nav>
+    <div class="hidden md:flex items-center gap-3">
+      <a href="#cta" class="text-sm text-slate-300 hover:text-white">Sign in</a>
+      <a href="#cta" class="text-sm bg-emerald-500 text-slate-950 hover:bg-emerald-400 font-semibold px-3 py-2 rounded-md">Book demo</a>
+    </div>
+    <button @click="open=!open" :aria-expanded="open" aria-controls="mobile-nav" class="md:hidden p-2 -mr-2 rounded text-slate-200" aria-label="Toggle navigation">
+      <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-cloak><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div id="mobile-nav" x-show="open" x-cloak class="md:hidden border-t border-white/5 bg-slate-950">
+    <div class="px-4 py-3 space-y-2 text-sm">
+      <a @click="open=false" href="#problem" class="block py-2 text-slate-300">Why now</a>
+      <a @click="open=false" href="#features" class="block py-2 text-slate-300">Platform</a>
+      <a @click="open=false" href="#dashboard" class="block py-2 text-slate-300">Live demo</a>
+      <a @click="open=false" href="#pricing" class="block py-2 text-slate-300">Pricing</a>
+      <a @click="open=false" href="#faq" class="block py-2 text-slate-300">FAQ</a>
+      <a @click="open=false" href="#cta" class="block py-2 mt-2 bg-emerald-500 text-slate-950 font-semibold rounded-md text-center">Book demo</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- Hero -->
+<section class="relative overflow-hidden">
+  <div class="absolute inset-0 grid-bg opacity-50 pointer-events-none"></div>
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28">
+    <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 rounded-full bg-blue-500/10 text-blue-300 text-xs font-medium px-3 py-1 ring-1 ring-blue-500/30">
+          <span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
+          Built for GSAR 552.239-7001 + DOE Genesis Mission
+        </div>
+        <h1 class="mt-5 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight">
+          Pass your federal AI <span class="gradient-text">safeguarding audit</span> in days, not quarters.
+        </h1>
+        <p class="mt-5 text-lg text-slate-300 max-w-xl">
+          FedAIComply is the compliance-as-a-service platform for GovCon firms running AI on federal contracts. Auto-generate documentation, monitor models against safeguarding mandates, and produce inspector-ready audit trails on demand.
+        </p>
+        <div class="mt-7 flex flex-col sm:flex-row gap-3">
+          <a href="#cta" class="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold px-5 py-3 rounded-md">
+            Start free 7-day assessment
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+          <a href="#dashboard" class="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-100 px-5 py-3 rounded-md">
+            See live compliance dashboard
+          </a>
+        </div>
+        <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs text-slate-400">
+          <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> FedRAMP Moderate-aligned</div>
+          <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> NIST AI RMF mapped</div>
+          <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> CMMC L2 evidence</div>
+        </div>
+      </div>
+
+      <!-- Hero card: Compliance score -->
+      <div class="relative">
+        <div class="absolute -inset-6 bg-gradient-to-tr from-blue-500/20 to-emerald-400/10 blur-2xl rounded-3xl pointer-events-none"></div>
+        <div class="relative rounded-2xl bg-slate-900/80 ring-1 ring-white/10 shadow-2xl p-6">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-wider text-slate-400">Contract: MAS-IT-2461 · Mid-tier GovCon</p>
+              <h3 class="mt-1 text-lg font-semibold">Safeguarding posture</h3>
+            </div>
+            <span class="inline-flex items-center gap-1 text-xs bg-amber-500/10 text-amber-300 px-2 py-1 rounded-full ring-1 ring-amber-500/30">2 gaps</span>
+          </div>
+          <div class="mt-6 flex items-center gap-6">
+            <div class="relative h-32 w-32">
+              <svg viewBox="0 0 36 36" class="h-32 w-32 -rotate-90">
+                <path class="text-slate-800" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                <path class="text-emerald-400" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="78, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-3xl font-bold">78</span>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400">/ 100</span>
+              </div>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span><span>14 controls passing</span></div>
+              <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-amber-400"></span><span>2 controls flagged</span></div>
+              <div class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-slate-500"></span><span>3 controls not yet evaluated</span></div>
+            </div>
+          </div>
+          <div class="mt-6 grid grid-cols-3 gap-3 text-center">
+            <div class="rounded-lg bg-slate-800/70 p-3">
+              <p class="text-xs text-slate-400">Time to audit-ready</p>
+              <p class="mt-1 text-base font-semibold text-emerald-300">11 days</p>
+            </div>
+            <div class="rounded-lg bg-slate-800/70 p-3">
+              <p class="text-xs text-slate-400">Docs auto-drafted</p>
+              <p class="mt-1 text-base font-semibold">42 / 47</p>
+            </div>
+            <div class="rounded-lg bg-slate-800/70 p-3">
+              <p class="text-xs text-slate-400">Last sync</p>
+              <p class="mt-1 text-base font-semibold">2 min ago</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Trust strip -->
+<section class="border-y border-white/5 bg-white/[.02]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-2 sm:grid-cols-4 gap-6 items-center text-center text-slate-400 text-xs sm:text-sm uppercase tracking-wider">
+    <div>GSA MAS contractors</div>
+    <div>DoD prime + sub</div>
+    <div>DOE Genesis Mission applicants</div>
+    <div>Civilian agency CIO offices</div>
+  </div>
+</section>
+
+<!-- Why now / Problem -->
+<section id="problem" class="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+  <div class="grid lg:grid-cols-3 gap-10">
+    <div class="lg:col-span-1">
+      <p class="text-emerald-300 text-xs uppercase tracking-wider font-semibold">Why now</p>
+      <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">The federal AI rulebook just got rewritten.</h2>
+      <p class="mt-4 text-slate-300">Three shifts in 2026 turned AI compliance from a paperwork chore into the gating issue on contract awards. The contractors that move first will own the next decade of federal AI spend.</p>
+    </div>
+    <div class="lg:col-span-2 grid sm:grid-cols-2 gap-5">
+      <article class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-5">
+        <p class="text-emerald-300 text-xs font-semibold">MARCH 2026</p>
+        <h3 class="mt-2 font-semibold">GSAR 552.239-7001 published</h3>
+        <p class="mt-2 text-sm text-slate-300">Draft AI safeguarding clause covers every contractor on the MAS schedule. Documentation, continuous monitoring, and incident reporting are now contractually required.</p>
+      </article>
+      <article class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-5">
+        <p class="text-emerald-300 text-xs font-semibold">APRIL 2026</p>
+        <h3 class="mt-2 font-semibold">DOE Genesis Mission · $293M</h3>
+        <p class="mt-2 text-sm text-slate-300">Compliance evidence is part of the application package. Applicants without an audit trail are getting cut in the first review.</p>
+      </article>
+      <article class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-5">
+        <p class="text-emerald-300 text-xs font-semibold">2026 Q1</p>
+        <h3 class="mt-2 font-semibold">DXC takes home GSA AI MAS</h3>
+        <p class="mt-2 text-sm text-slate-300">Primes are putting compliance language into every flow-down. Subs need a scalable answer or they lose the seat.</p>
+      </article>
+      <article class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-5">
+        <p class="text-emerald-300 text-xs font-semibold">REALITY</p>
+        <h3 class="mt-2 font-semibold">Mid-tier GovCons have no compliance team</h3>
+        <p class="mt-2 text-sm text-slate-300">The thousands of small / mid GovCon firms that win on agility don't have a Big-4 compliance budget. They need tooling, not a six-month engagement.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features" class="bg-white/[.02] border-y border-white/5">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+    <div class="max-w-2xl">
+      <p class="text-emerald-300 text-xs uppercase tracking-wider font-semibold">Platform</p>
+      <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">Five capabilities, one source of truth.</h2>
+      <p class="mt-4 text-slate-300">Every artifact a contracting officer can ask for, generated, version-controlled, and time-stamped — without spinning up a GRC team.</p>
+    </div>
+    <div class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-6 hover:ring-emerald-400/30 transition">
+        <div class="h-10 w-10 rounded-lg bg-emerald-500/15 text-emerald-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h3 class="mt-4 font-semibold">Auto-drafted documentation</h3>
+        <p class="mt-2 text-sm text-slate-300">Pre-built templates for Safeguarding Plan, Model Card, AI System Inventory, Risk Assessment, and 14 more. Tie inputs to your contracts; FedAIComply produces the artifact in minutes.</p>
+      </div>
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-6 hover:ring-emerald-400/30 transition">
+        <div class="h-10 w-10 rounded-lg bg-blue-500/15 text-blue-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <h3 class="mt-4 font-semibold">Continuous model monitoring</h3>
+        <p class="mt-2 text-sm text-slate-300">Drift, hallucination, bias, and access checks run on a schedule. Flagged events feed your audit log automatically — no manual evidence collection.</p>
+      </div>
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-6 hover:ring-emerald-400/30 transition">
+        <div class="h-10 w-10 rounded-lg bg-purple-500/15 text-purple-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0h-2m-7-5a9 9 0 1118 0 9 9 0 01-18 0z"/></svg>
+        </div>
+        <h3 class="mt-4 font-semibold">Inspector-ready audit trail</h3>
+        <p class="mt-2 text-sm text-slate-300">Every prompt, model output, parameter change, and access event is hashed and time-stamped. Export a contract-bound trail in PDF or SARIF.</p>
+      </div>
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-6 hover:ring-emerald-400/30 transition">
+        <div class="h-10 w-10 rounded-lg bg-amber-500/15 text-amber-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </div>
+        <h3 class="mt-4 font-semibold">Control mapping that doesn't suck</h3>
+        <p class="mt-2 text-sm text-slate-300">FedAIComply maps your evidence to GSAR, NIST AI RMF, OMB M-24-10, and CMMC L2 in one pass. Add a new framework in a click.</p>
+      </div>
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-6 hover:ring-emerald-400/30 transition">
+        <div class="h-10 w-10 rounded-lg bg-rose-500/15 text-rose-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        </div>
+        <h3 class="mt-4 font-semibold">Incident detection &amp; reporting</h3>
+        <p class="mt-2 text-sm text-slate-300">Watches for prompt injection, data exfiltration, and unsafe outputs. When something breaks, FedAIComply files the incident report your CO needs in under five minutes.</p>
+      </div>
+      <div class="rounded-xl bg-slate-900/60 ring-1 ring-white/10 p-6 hover:ring-emerald-400/30 transition">
+        <div class="h-10 w-10 rounded-lg bg-teal-500/15 text-teal-300 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <h3 class="mt-4 font-semibold">FedRAMP-aligned hosting</h3>
+        <p class="mt-2 text-sm text-slate-300">Built on a FedRAMP Moderate-aligned stack with optional GovCloud isolation. Bring your own encryption keys, your own logging sink, and your own SSO.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Live demo dashboard -->
+<section id="dashboard" class="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+  <div class="max-w-2xl">
+    <p class="text-emerald-300 text-xs uppercase tracking-wider font-semibold">Live demo</p>
+    <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">A working compliance dashboard, not a screenshot.</h2>
+    <p class="mt-4 text-slate-300">This is the same surface your compliance lead sees. Click around — every control, document, and incident is live.</p>
+  </div>
+
+  <div x-data="ComplianceDashboard()" class="mt-10 rounded-2xl bg-slate-900/60 ring-1 ring-white/10 overflow-hidden">
+    <!-- Tabs -->
+    <div class="flex flex-wrap items-center gap-1 px-3 sm:px-5 pt-4 border-b border-white/10">
+      <template x-for="tab in tabs" :key="tab.id">
+        <button @click="active=tab.id" :class="active===tab.id?'bg-slate-800 text-white ring-1 ring-white/10':'text-slate-400 hover:text-white'" class="text-sm px-3 py-2 rounded-t-md" x-text="tab.label"></button>
+      </template>
+      <div class="ml-auto pb-2 flex items-center gap-2">
+        <span class="text-xs text-slate-400">Filter:</span>
+        <select x-model="frameworkFilter" class="bg-slate-800 text-slate-200 text-xs rounded px-2 py-1 ring-1 ring-white/10 focus:outline-none focus:ring-emerald-400">
+          <option value="all">All frameworks</option>
+          <option value="GSAR">GSAR 552.239-7001</option>
+          <option value="NIST">NIST AI RMF</option>
+          <option value="OMB">OMB M-24-10</option>
+          <option value="CMMC">CMMC L2</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Controls tab -->
+    <div x-show="active==='controls'" class="p-4 sm:p-6">
+      <div class="grid sm:grid-cols-3 gap-4 mb-6">
+        <div class="rounded-lg bg-slate-800/70 ring-1 ring-white/10 p-4">
+          <p class="text-xs uppercase text-slate-400">Passing</p>
+          <p class="mt-1 text-2xl font-semibold text-emerald-300" x-text="stats().pass"></p>
+        </div>
+        <div class="rounded-lg bg-slate-800/70 ring-1 ring-white/10 p-4">
+          <p class="text-xs uppercase text-slate-400">Flagged</p>
+          <p class="mt-1 text-2xl font-semibold text-amber-300" x-text="stats().flag"></p>
+        </div>
+        <div class="rounded-lg bg-slate-800/70 ring-1 ring-white/10 p-4">
+          <p class="text-xs uppercase text-slate-400">Not yet evaluated</p>
+          <p class="mt-1 text-2xl font-semibold text-slate-300" x-text="stats().pending"></p>
+        </div>
+      </div>
+      <div class="overflow-x-auto rounded-lg ring-1 ring-white/10">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-800/70 text-slate-300 text-xs uppercase">
+            <tr><th class="text-left px-4 py-3">Control</th><th class="text-left px-4 py-3">Framework</th><th class="text-left px-4 py-3">Status</th><th class="text-left px-4 py-3">Evidence</th><th class="text-left px-4 py-3">Last check</th></tr>
+          </thead>
+          <tbody class="divide-y divide-white/5">
+            <template x-for="c in filteredControls()" :key="c.id">
+              <tr class="hover:bg-white/[.03]">
+                <td class="px-4 py-3"><div class="font-medium" x-text="c.id"></div><div class="text-xs text-slate-400" x-text="c.name"></div></td>
+                <td class="px-4 py-3 text-slate-300" x-text="c.framework"></td>
+                <td class="px-4 py-3">
+                  <span :class="c.status==='pass'?'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30':c.status==='flag'?'bg-amber-500/10 text-amber-300 ring-amber-500/30':'bg-slate-500/10 text-slate-300 ring-slate-500/30'" class="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ring-1">
+                    <span class="h-1.5 w-1.5 rounded-full" :class="c.status==='pass'?'bg-emerald-400':c.status==='flag'?'bg-amber-400':'bg-slate-400'"></span>
+                    <span x-text="c.status==='pass'?'Pass':c.status==='flag'?'Flagged':'Pending'"></span>
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-slate-400 text-xs" x-text="c.evidence"></td>
+                <td class="px-4 py-3 text-slate-400 text-xs" x-text="c.last"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Documents tab -->
+    <div x-show="active==='docs'" x-cloak class="p-4 sm:p-6">
+      <div class="grid md:grid-cols-2 gap-4">
+        <template x-for="d in docs" :key="d.id">
+          <div class="rounded-lg bg-slate-800/70 ring-1 ring-white/10 p-4 flex items-start justify-between">
+            <div>
+              <p class="font-semibold" x-text="d.title"></p>
+              <p class="text-xs text-slate-400 mt-0.5" x-text="d.subtitle"></p>
+              <p class="text-xs text-slate-500 mt-2">Last revised <span x-text="d.last"></span> · <span x-text="d.owner"></span></p>
+            </div>
+            <span :class="d.status==='ready'?'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30':d.status==='draft'?'bg-blue-500/10 text-blue-300 ring-blue-500/30':'bg-amber-500/10 text-amber-300 ring-amber-500/30'" class="text-xs px-2 py-1 rounded-full ring-1" x-text="d.status==='ready'?'Audit-ready':d.status==='draft'?'Draft':'Needs input'"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Incidents tab -->
+    <div x-show="active==='incidents'" x-cloak class="p-4 sm:p-6">
+      <ul class="space-y-3">
+        <template x-for="i in incidents" :key="i.id">
+          <li class="rounded-lg bg-slate-800/70 ring-1 ring-white/10 p-4">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="font-medium" x-text="i.title"></p>
+                <p class="text-xs text-slate-400 mt-1" x-text="i.summary"></p>
+                <div class="mt-2 flex flex-wrap gap-2 text-[11px] text-slate-400">
+                  <span class="bg-white/5 ring-1 ring-white/10 rounded px-1.5 py-0.5" x-text="'System ' + i.system"></span>
+                  <span class="bg-white/5 ring-1 ring-white/10 rounded px-1.5 py-0.5" x-text="i.detected"></span>
+                </div>
+              </div>
+              <span :class="i.severity==='high'?'bg-rose-500/10 text-rose-300 ring-rose-500/30':i.severity==='med'?'bg-amber-500/10 text-amber-300 ring-amber-500/30':'bg-slate-500/10 text-slate-300 ring-slate-500/30'" class="text-xs px-2 py-1 rounded-full ring-1" x-text="i.severity.toUpperCase()"></span>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing" class="bg-white/[.02] border-y border-white/5">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-20">
+    <div class="max-w-2xl">
+      <p class="text-emerald-300 text-xs uppercase tracking-wider font-semibold">Pricing</p>
+      <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">Priced for the contractor, not the consultant.</h2>
+      <p class="mt-4 text-slate-300">No six-figure consulting retainer. Pay per contract, scale as you win more.</p>
+    </div>
+    <div class="mt-12 grid md:grid-cols-3 gap-6">
+      <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-6">
+        <p class="text-sm text-slate-300">Solo prime</p>
+        <p class="mt-2 text-3xl font-bold">$499<span class="text-base font-normal text-slate-400">/mo</span></p>
+        <p class="mt-1 text-xs text-slate-400">Up to 1 contract, 2 AI systems</p>
+        <ul class="mt-5 space-y-2 text-sm text-slate-300">
+          <li>✓ All compliance templates</li>
+          <li>✓ Continuous monitoring</li>
+          <li>✓ PDF + SARIF audit export</li>
+          <li>✓ Email support</li>
+        </ul>
+        <a href="#cta" class="mt-6 inline-flex w-full justify-center bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-100 px-4 py-2 rounded-md text-sm">Start 14-day trial</a>
+      </div>
+      <div class="rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-400/40 p-6 relative">
+        <span class="absolute -top-3 left-6 bg-emerald-400 text-slate-950 text-[11px] font-semibold px-2 py-1 rounded-full">Most signed</span>
+        <p class="text-sm text-emerald-200">GovCon team</p>
+        <p class="mt-2 text-3xl font-bold">$2,400<span class="text-base font-normal text-slate-400">/mo</span></p>
+        <p class="mt-1 text-xs text-slate-300">Up to 8 contracts, 10 AI systems</p>
+        <ul class="mt-5 space-y-2 text-sm text-slate-100">
+          <li>✓ Everything in Solo prime</li>
+          <li>✓ SSO + role-based access</li>
+          <li>✓ Slack &amp; Teams alerts</li>
+          <li>✓ Quarterly readiness review</li>
+        </ul>
+        <a href="#cta" class="mt-6 inline-flex w-full justify-center bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-semibold px-4 py-2 rounded-md text-sm">Book 30-min walkthrough</a>
+      </div>
+      <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-6">
+        <p class="text-sm text-slate-300">Federal scale</p>
+        <p class="mt-2 text-3xl font-bold">Talk to us</p>
+        <p class="mt-1 text-xs text-slate-400">Unlimited contracts, GovCloud isolation</p>
+        <ul class="mt-5 space-y-2 text-sm text-slate-300">
+          <li>✓ Dedicated tenant + BYO keys</li>
+          <li>✓ Priority incident SLA</li>
+          <li>✓ FedRAMP Moderate ATO support</li>
+          <li>✓ Designated compliance engineer</li>
+        </ul>
+        <a href="#cta" class="mt-6 inline-flex w-full justify-center bg-white/5 hover:bg-white/10 ring-1 ring-white/10 text-slate-100 px-4 py-2 rounded-md text-sm">Request a quote</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="max-w-4xl mx-auto px-4 sm:px-6 py-20">
+  <p class="text-emerald-300 text-xs uppercase tracking-wider font-semibold">FAQ</p>
+  <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight">Common questions from contracting officers.</h2>
+  <div class="mt-8 divide-y divide-white/10 ring-1 ring-white/10 rounded-xl bg-slate-900/40" x-data="{open:0}">
+    <template x-for="(q,i) in [
+      {q:'Is FedAIComply itself FedRAMP authorized?', a:'We are FedRAMP Moderate-aligned today and pursuing ATO with our co-sponsor agency. Customers in restricted environments can run an isolated GovCloud tenant.'},
+      {q:'Which frameworks are mapped out of the box?', a:'GSAR 552.239-7001, NIST AI RMF 1.0, OMB M-24-10, CMMC L2, NIST 800-53 rev. 5 (AI overlay), and DoD CDAO Responsible AI guidelines.'},
+      {q:'How do you collect evidence without disrupting deployed systems?', a:'A lightweight side-car logger captures inputs, outputs, model versions, and policy events. Read-only by default; can run fully air-gapped with a manual evidence drop.'},
+      {q:'What happens during an audit?', a:'Generate a contract-bound audit package in PDF or SARIF. Includes hashed event log, signed artifacts, and a control-by-control evidence map.'}
+    ])" :key="i">
+      <button @click="open=open===i?-1:i" class="w-full text-left px-5 py-4 flex items-center justify-between gap-4">
+        <span class="font-medium" x-text="q.q"></span>
+        <span class="text-slate-400" x-text="open===i?'−':'+'"></span>
+      </button>
+      <div x-show="open===i" x-cloak class="px-5 pb-4 text-sm text-slate-300" x-text="q.a"></div>
+    </template>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta" class="relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-blue-500/15 via-emerald-500/10 to-transparent pointer-events-none"></div>
+  <div class="relative max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
+    <h2 class="text-3xl sm:text-4xl font-bold tracking-tight">Get audit-ready before June 1.</h2>
+    <p class="mt-4 text-slate-300 max-w-2xl mx-auto">Tell us your top contract vehicle and we'll send a 14-day onboarding plan in under 24 hours. No procurement gauntlet — credit card on file, cancel any time.</p>
+    <form x-data="{email:'', sent:false, busy:false}" @submit.prevent="if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return; busy=true; setTimeout(()=>{busy=false;sent=true;},650)" class="mt-8 max-w-xl mx-auto flex flex-col sm:flex-row gap-3" novalidate>
+      <label class="sr-only" for="cta-email">Work email</label>
+      <input id="cta-email" type="email" x-model="email" placeholder="cio@yourgovcon.com" class="flex-1 bg-white/5 ring-1 ring-white/10 focus:ring-emerald-400 text-slate-100 placeholder:text-slate-500 px-4 py-3 rounded-md outline-none" required />
+      <button :disabled="busy||sent" class="bg-emerald-400 hover:bg-emerald-300 disabled:bg-emerald-400/40 text-slate-950 font-semibold px-5 py-3 rounded-md">
+        <span x-show="!sent && !busy">Get my plan →</span>
+        <span x-show="busy" x-cloak>Sending…</span>
+        <span x-show="sent" x-cloak>Plan en route ✓</span>
+      </button>
+    </form>
+    <p x-show="false" class="mt-3 text-xs text-slate-400">SOC 2 Type II in progress · Data stays in CONUS by default.</p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-white/5 bg-slate-950">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-emerald-400 text-slate-950 font-black">F</span>
+        <span class="font-semibold tracking-tight">FedAIComply</span>
+      </div>
+      <p class="mt-3 text-slate-400">Compliance-as-a-service for federal AI contractors.</p>
+    </div>
+    <div>
+      <p class="text-slate-200 font-semibold">Platform</p>
+      <ul class="mt-3 space-y-2 text-slate-400">
+        <li><a href="#features" class="hover:text-white">Capabilities</a></li>
+        <li><a href="#dashboard" class="hover:text-white">Live demo</a></li>
+        <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-slate-200 font-semibold">Compliance</p>
+      <ul class="mt-3 space-y-2 text-slate-400">
+        <li>GSAR 552.239-7001</li>
+        <li>NIST AI RMF 1.0</li>
+        <li>OMB M-24-10 / CMMC L2</li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-slate-200 font-semibold">Contact</p>
+      <ul class="mt-3 space-y-2 text-slate-400">
+        <li>hello@fedaicomply.gov</li>
+        <li>+1 (202) 555-0142</li>
+        <li>1717 Pennsylvania Ave NW · Washington, DC</li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 text-xs text-slate-500 flex flex-col sm:flex-row justify-between gap-2">
+      <p>© 2026 FedAIComply, Inc. All rights reserved.</p>
+      <p>Demo build · MVP scaffold</p>
+    </div>
+  </div>
+</footer>
+</main>
+
+<script>
+function ComplianceDashboard(){
+  return {
+    active:'controls',
+    frameworkFilter:'all',
+    tabs:[{id:'controls',label:'Controls'},{id:'docs',label:'Documents'},{id:'incidents',label:'Incidents'}],
+    controls:[
+      {id:'AI-1.1',name:'AI System Inventory maintained',framework:'GSAR',status:'pass',evidence:'inventory_v12.json · signed',last:'2 min ago'},
+      {id:'AI-2.4',name:'Model risk assessment current',framework:'NIST',status:'pass',evidence:'risk_2026Q2.pdf',last:'1 hr ago'},
+      {id:'AI-3.7',name:'Adversarial testing logged',framework:'NIST',status:'flag',evidence:'awaiting redteam_run_42',last:'4 hr ago'},
+      {id:'AI-4.2',name:'Output content filtering on prod',framework:'OMB',status:'pass',evidence:'guardrails.yaml v8',last:'15 min ago'},
+      {id:'AI-5.0',name:'Privileged access reviewed quarterly',framework:'CMMC',status:'pending',evidence:'review window opens 2026-05-12',last:'—'},
+      {id:'AI-6.1',name:'Incident reporting channel verified',framework:'GSAR',status:'pass',evidence:'CO confirmed 2026-04-22',last:'4 days ago'},
+      {id:'AI-7.3',name:'Model card published per system',framework:'NIST',status:'flag',evidence:'2 of 4 systems missing model card',last:'12 hr ago'}
+    ],
+    docs:[
+      {id:'d1',title:'AI Safeguarding Plan',subtitle:'GSAR 552.239-7001 §(b)(1)–(b)(5)',status:'ready',last:'2026-04-25',owner:'auto-generated'},
+      {id:'d2',title:'Model Card · GenAssist v3',subtitle:'Customer-support copilot, contract MAS-IT-2461',status:'ready',last:'2026-04-23',owner:'P. Singh'},
+      {id:'d3',title:'Risk Assessment · 2026 Q2',subtitle:'NIST AI RMF MAP + MEASURE outputs',status:'draft',last:'2026-04-21',owner:'auto-generated'},
+      {id:'d4',title:'Adversarial Test Report',subtitle:'Red-team batch #42 results',status:'needs',last:'2026-04-19',owner:'red-team queue'},
+      {id:'d5',title:'Privileged Access Roster',subtitle:'Quarterly review · CMMC L2',status:'ready',last:'2026-04-15',owner:'C. Yang'},
+      {id:'d6',title:'Incident Response Playbook',subtitle:'Hallucination + exfil workflows',status:'ready',last:'2026-04-10',owner:'auto-generated'}
+    ],
+    incidents:[
+      {id:1,title:'Prompt-injection blocked on GenAssist',summary:'Detected and rejected an injection attempt embedded in user-uploaded PDF. No data leaked.',system:'GenAssist v3',detected:'2026-04-26 09:14 EDT',severity:'med'},
+      {id:2,title:'Drift threshold exceeded · ContractsBot',summary:'Output sentiment drift > 6σ from rolling baseline. Auto-paused for human review.',system:'ContractsBot v1',detected:'2026-04-25 22:08 EDT',severity:'high'},
+      {id:3,title:'PII pattern caught in retrieval',summary:'Retrieval pipeline returned a record containing what looked like an SSN. Redacted before generation.',system:'KBSearch v2',detected:'2026-04-24 11:51 EDT',severity:'low'}
+    ],
+    filteredControls(){
+      if(this.frameworkFilter==='all') return this.controls;
+      return this.controls.filter(c=>c.framework===this.frameworkFilter);
+    },
+    stats(){
+      const f = this.filteredControls();
+      return {pass:f.filter(c=>c.status==='pass').length, flag:f.filter(c=>c.status==='flag').length, pending:f.filter(c=>c.status==='pending').length};
+    }
+  }
+}
+</script>
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"SoftwareApplication",
+  "name":"FedAIComply",
+  "applicationCategory":"BusinessApplication",
+  "operatingSystem":"Web",
+  "description":"Compliance-as-a-service for federal AI contractors. GSAR 552.239-7001, NIST AI RMF, OMB M-24-10, CMMC L2.",
+  "offers":{"@type":"AggregateOffer","priceCurrency":"USD","lowPrice":"499","highPrice":"2400"}
+}
+</script>
+
+</body>
+</html>
