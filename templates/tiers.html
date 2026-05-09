@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ app_name }} — Risk tier requirements (Low / Medium / High){% endblock %}
+{% block og_title %}{{ app_name }} — Risk tier requirements{% endblock %}
+{% block og_description %}What each GSAR 552.239-7001 risk tier actually requires: re-test cadence, log retention, CO notification windows, and the artifacts auditors look for.{% endblock %}
+
+{% block content %}
+<section class="border-b border-navy-900/10 bg-sand-100">
+  <div class="mx-auto max-w-6xl px-6 py-14 sm:py-20">
+    <p class="text-xs uppercase tracking-widest text-flag-red font-semibold">Risk tier reference</p>
+    <h1 class="mt-3 font-display text-3xl sm:text-5xl font-semibold tracking-tight">What each tier actually requires</h1>
+    <p class="mt-4 max-w-3xl text-navy-900/80 text-lg leading-relaxed">
+      The {{ app_name }} classifier maps your AI system to a Low, Medium, or High tier under
+      GSAR 552.239-7001 and the NIST AI RMF. Each tier carries different obligations — the
+      table below is the same logic the model-card generator uses to decide cadence,
+      retention, and notification thresholds.
+    </p>
+    <div class="mt-7 flex flex-wrap gap-3 text-sm">
+      <a href="/assess" class="inline-flex items-center rounded-md bg-navy-900 px-5 py-2.5 text-sand-50 hover:bg-navy-700">Run the 4-question assessment →</a>
+      <a href="/#how" class="inline-flex items-center rounded-md border border-navy-900/20 px-5 py-2.5 hover:border-navy-900">How the classifier works</a>
+    </div>
+  </div>
+</section>
+
+<section class="border-b border-navy-900/10">
+  <div class="mx-auto max-w-6xl px-6 py-14 sm:py-20">
+    <div class="grid gap-6 lg:grid-cols-3">
+      {% for t in tiers %}
+      <article class="rounded-2xl border border-navy-900/10 bg-white p-6 shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold {{ t.badge_class }}">{{ t.badge }}</span>
+          <div>
+            <div class="font-display text-xl font-semibold">{{ t.name }} tier</div>
+            <div class="text-xs text-navy-900/60">{{ t.subhead }}</div>
+          </div>
+        </div>
+        <p class="mt-4 text-sm text-navy-900/80 leading-relaxed">{{ t.summary }}</p>
+        <dl class="mt-5 space-y-3 text-sm">
+          {% for k, v in t.facts %}
+          <div class="flex items-start justify-between gap-4 border-t border-navy-900/10 pt-3">
+            <dt class="text-navy-900/60">{{ k }}</dt>
+            <dd class="text-right font-medium">{{ v }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="border-b border-navy-900/10 bg-sand-100">
+  <div class="mx-auto max-w-6xl px-6 py-14 sm:py-20">
+    <h2 class="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Side-by-side comparison</h2>
+    <p class="mt-2 text-navy-900/70 max-w-2xl">Quick reference for compliance reviewers, COs, and audit teams. Pull this from any assessment with the model-card generator.</p>
+
+    <div class="mt-8 overflow-x-auto rounded-xl border border-navy-900/10 bg-white">
+      <table class="min-w-full text-sm">
+        <thead class="bg-navy-900 text-sand-50 text-left">
+          <tr>
+            <th class="px-4 py-3 font-semibold">Requirement</th>
+            {% for t in tiers %}<th class="px-4 py-3 font-semibold">{{ t.name }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in matrix %}
+          <tr class="{{ 'bg-sand-50' if loop.index is odd else 'bg-white' }} border-t border-navy-900/10">
+            <th scope="row" class="px-4 py-3 text-left text-navy-900/70 font-medium align-top">{{ row.label }}</th>
+            {% for cell in row.cells %}<td class="px-4 py-3 align-top">{{ cell }}</td>{% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-4 text-xs text-navy-900/60">Source: GSAR 552.239-7001 (March 2026 draft), NIST AI RMF 1.0, OMB M-24-10. Cadence numbers are the {{ app_name }} default policy and align with the cadence baked into the model-card generator.</p>
+  </div>
+</section>
+
+<section>
+  <div class="mx-auto max-w-4xl px-6 py-14 sm:py-20 text-center">
+    <h2 class="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Not sure which tier you're in?</h2>
+    <p class="mt-3 text-navy-900/80">Answer four questions about deployment context, autonomy, data sensitivity, and authorization boundary. Get a tier + score in under a minute, no email required.</p>
+    <a href="/assess" class="mt-6 inline-flex items-center rounded-md bg-navy-900 px-6 py-3 text-sand-50 hover:bg-navy-700">Start the assessment →</a>
+  </div>
+</section>
+{% endblock %}

@@ -10,6 +10,8 @@ Stack chosen deliberately (not a default):
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import threading
@@ -28,6 +30,12 @@ DATA_DIR = Path(os.environ.get("SAFEGSA_DATA_DIR", "/app/data"))
 LEAD_FILE = DATA_DIR / "leads.jsonl"
 ASSESS_FILE = DATA_DIR / "assessments.jsonl"
 ADMIN_TOKEN = os.environ.get("SAFEGSA_ADMIN_TOKEN", "").strip()
+
+# Build identity — lets ops correlate /health output with a specific deploy
+# without running git inside the container. Set by Dockerfile/CI; falls back
+# to "dev" so local runs still serve the endpoint cleanly.
+APP_VERSION = os.environ.get("SAFEGSA_VERSION", "dev")
+START_TS = time.time()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["JSON_SORT_KEYS"] = False
@@ -272,6 +280,83 @@ def assess_view():
         "assess.html",
         app_name=APP_NAME,
         questions=QUESTIONS,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Static reference content surfaced as a real route — gives federal-procurement
+# audiences a deep-link they can paste into RFP responses, and lets the
+# model-card generator's tier policy be inspected without running an assessment.
+# ---------------------------------------------------------------------------
+
+# Tier policy reference. Numbers must stay in sync with the model-card
+# generator (re-test cadence, log retention, CO notification window).
+TIERS_POLICY: list[dict[str, Any]] = [
+    {
+        "name": "Low",
+        "subhead": "Internal back-office, fully supervised",
+        "badge": "L",
+        "badge_class": "bg-emerald-100 text-emerald-800",
+        "summary": "Routine internal use with a human in the loop on every output. Failure mode is inconvenience, not harm to the public or the mission.",
+        "facts": [
+            ("Re-test cadence", "Annual"),
+            ("Audit-log retention", "90 days"),
+            ("CO notification window", "72 hours"),
+            ("ATO posture", "Lightweight self-attestation"),
+            ("Model-card depth", "8-section short form"),
+        ],
+    },
+    {
+        "name": "Medium",
+        "subhead": "Mission-supporting, human-in-loop",
+        "badge": "M",
+        "badge_class": "bg-amber-100 text-amber-800",
+        "summary": "Affects mission decisions or supervised contractor workflows. Human review on consequential outputs; occasional public exposure.",
+        "facts": [
+            ("Re-test cadence", "Quarterly"),
+            ("Audit-log retention", "180 days"),
+            ("CO notification window", "48 hours"),
+            ("ATO posture", "Documented controls + drift monitoring"),
+            ("Model-card depth", "8-section + bias-testing appendix"),
+        ],
+    },
+    {
+        "name": "High",
+        "subhead": "Public-facing or autonomous",
+        "badge": "H",
+        "badge_class": "bg-flag-red/15 text-flag-red",
+        "summary": "Public-facing decisions, sensitive PII, or supervised-autonomous behavior. Failures can harm citizens, beneficiaries, or contracting officers.",
+        "facts": [
+            ("Re-test cadence", "Monthly"),
+            ("Audit-log retention", "365 days"),
+            ("CO notification window", "24 hours"),
+            ("ATO posture", "Full ATO with continuous monitoring"),
+            ("Model-card depth", "Full GSAR/NIST 8-section + incident plan"),
+        ],
+    },
+]
+
+# Side-by-side comparison rows. Each `cells` array aligns with TIERS_POLICY.
+TIERS_MATRIX: list[dict[str, Any]] = [
+    {"label": "Re-test cadence", "cells": ["Annual", "Quarterly", "Monthly"]},
+    {"label": "Audit log retention", "cells": ["90 days", "180 days", "365 days"]},
+    {"label": "CO notification window", "cells": ["72 hours", "48 hours", "24 hours"]},
+    {"label": "Bias / fairness testing", "cells": ["Annual sample", "Quarterly + drift", "Monthly + adversarial probes"]},
+    {"label": "Training-data provenance", "cells": ["Inventory", "Inventory + lineage", "Inventory + lineage + DPIA"]},
+    {"label": "Continuous monitoring", "cells": ["Optional", "Required (drift)", "Required (drift + safety probes)"]},
+    {"label": "Incident response plan", "cells": ["Documented", "Documented + tabletop /yr", "Documented + tabletop /qtr"]},
+    {"label": "Authorization to Operate (ATO)", "cells": ["Self-attested", "Documented controls", "Full ATO"]},
+    {"label": "Public-facing exposure", "cells": ["No", "Limited / supervised", "Yes"]},
+]
+
+
+@app.get("/tiers")
+def tiers_view():
+    return render_template(
+        "tiers.html",
+        app_name=APP_NAME,
+        tiers=TIERS_POLICY,
+        matrix=TIERS_MATRIX,
     )
 
 
@@ -539,12 +624,94 @@ def api_admin_assessments():
             tier = str(r.get("tier", "_unknown"))
             counts[tier] = counts.get(tier, 0) + 1
         return jsonify({"ok": True, "total": len(rows), "by_tier": counts})
+    # CSV export — compliance teams paste this straight into Excel / SharePoint
+    # for audit binders. Each saved answer becomes its own column so analysts
+    # can pivot by domain, autonomy, etc., without unpacking nested JSON.
+    if request.args.get("format") == "csv":
+        answer_keys: list[str] = []
+        seen: set[str] = set()
+        for r in rows:
+            for k in (r.get("answers") or {}).keys():
+                if k not in seen:
+                    seen.add(k)
+                    answer_keys.append(k)
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["id", "at", "ip", "tier", "score", *[f"answer_{k}" for k in answer_keys]])
+        for r in rows:
+            answers = r.get("answers") or {}
+            writer.writerow([
+                r.get("id", ""),
+                r.get("at", ""),
+                r.get("ip", ""),
+                r.get("tier", ""),
+                r.get("score", ""),
+                *[answers.get(k, "") for k in answer_keys],
+            ])
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        return Response(
+            buf.getvalue(),
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="safegsa-assessments-{ts}.csv"'},
+        )
     return jsonify({"ok": True, "count": len(rows), "assessments": rows})
+
+
+def _count_jsonl_lines(path: Path) -> int:
+    """Cheap line count for /health diagnostics. Returns 0 on any I/O error."""
+    if not path.exists():
+        return 0
+    try:
+        with path.open("rb") as fh:
+            return sum(1 for _ in fh)
+    except OSError:
+        return 0
+
+
+def _data_dir_writable() -> bool:
+    """Probe write access without persisting state. Used by /health."""
+    try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        probe = DATA_DIR / f".healthcheck-{uuid.uuid4().hex[:6]}"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        return True
+    except OSError:
+        return False
 
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok", "app": APP_NAME, "ts": datetime.now(timezone.utc).isoformat()})
+    """Liveness + lightweight diagnostics.
+
+    JSON shape designed for Datadog / Prometheus / Fly health probes — every
+    field is either a primitive or a small flat object so monitoring agents
+    can scrape without unwrapping nested structures. status=ok always means
+    the process is up; downstream checks (data dir writable, persistence
+    counters) are reported separately so a degraded disk doesn't cascade
+    into a process restart.
+    """
+    now = time.time()
+    storage_ok = _data_dir_writable()
+    body = {
+        "status": "ok",
+        "app": APP_NAME,
+        "version": APP_VERSION,
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "uptime_s": int(now - START_TS),
+        "checks": {
+            "data_dir_writable": storage_ok,
+        },
+        "metrics": {
+            "leads": _count_jsonl_lines(LEAD_FILE),
+            "assessments": _count_jsonl_lines(ASSESS_FILE),
+        },
+        "config": {
+            "admin_token_configured": bool(ADMIN_TOKEN),
+            "data_dir": str(DATA_DIR),
+        },
+    }
+    return jsonify(body)
 
 
 # ---------------------------------------------------------------------------
@@ -558,6 +725,7 @@ def sitemap():
         ("/", "1.0"),
         ("/dashboard", "0.7"),
         ("/assess", "0.9"),
+        ("/tiers", "0.8"),
     ]
     urls = "\n".join(
         f"  <url><loc>{SITE_URL.rstrip('/')}{p}</loc><lastmod>{today}</lastmod><priority>{prio}</priority></url>"
