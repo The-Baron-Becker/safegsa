@@ -30,6 +30,27 @@
     "audience": { "@type": "Audience", "audienceType": "Federal contractors" }
   }
   </script>
+
+  {# BreadcrumbList JSON-LD — inner routes provide an ordered trail so search
+     engines render a path under the result instead of a bare URL. Each child
+     template overrides {% block breadcrumb_items %} with a JSON array of
+     {name, item} objects. The list is automatically prefixed with Home. #}
+  {% block breadcrumb %}
+    {% set breadcrumb_items_json = self.breadcrumb_items() | trim %}
+    {% if breadcrumb_items_json %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ request.url_root.rstrip('/') }}/" }
+        {{ breadcrumb_items_json }}
+      ]
+    }
+    </script>
+    {% endif %}
+  {% endblock %}
+  {% block breadcrumb_items %}{% endblock %}
   <link rel="preconnect" href="https://cdn.tailwindcss.com" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
   <script>
@@ -70,6 +91,7 @@
         <a href="/tiers" class="hover:text-flag-red">Tier requirements</a>
         <a href="/dashboard" class="hover:text-flag-red">Dashboard demo</a>
         <a href="/assess" class="hover:text-flag-red">Risk assessment</a>
+        <a href="/about" class="hover:text-flag-red">About</a>
         <a href="/#contact" class="inline-flex items-center rounded-md bg-navy-900 px-4 py-2 text-sand-50 hover:bg-navy-700">Request a briefing</a>
       </nav>
     </div>
@@ -89,6 +111,8 @@
           <li><a href="/#how" class="hover:text-white">How it works</a></li>
           <li><a href="/dashboard" class="hover:text-white">Dashboard demo</a></li>
           <li><a href="/assess" class="hover:text-white">Risk assessment</a></li>
+          <li><a href="/tiers" class="hover:text-white">Tier requirements</a></li>
+          <li><a href="/about" class="hover:text-white">About</a></li>
         </ul>
       </div>
       <div>

@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Risk assessment · {{ app_name }}{% endblock %}
+
+{% block breadcrumb_items %}
+        , { "@type": "ListItem", "position": 2, "name": "Risk assessment", "item": "{{ request.url_root.rstrip('/') }}/assess" }
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-3xl px-6 py-12">
   <div class="text-xs uppercase tracking-wider text-navy-900/60">Self-assessment</div>

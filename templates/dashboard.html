@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Dashboard demo · {{ app_name }}{% endblock %}
+
+{% block breadcrumb_items %}
+        , { "@type": "ListItem", "position": 2, "name": "Dashboard demo", "item": "{{ request.url_root.rstrip('/') }}/dashboard" }
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-6xl px-6 py-10">
   <div class="flex flex-wrap items-end justify-between gap-4">

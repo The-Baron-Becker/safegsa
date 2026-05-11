@@ -11,9 +11,12 @@ Stack chosen deliberately (not a default):
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
+import logging
 import os
+import sys
 import threading
 import time
 import uuid
@@ -21,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, Response, jsonify, render_template, request
+from flask import Flask, Response, g, jsonify, render_template, request
 
 APP_NAME = "SafeGSA"
 APP_TAGLINE = "AI safeguarding compliance for federal contractors"
@@ -39,6 +42,71 @@ START_TS = time.time()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["JSON_SORT_KEYS"] = False
+
+
+# ---------------------------------------------------------------------------
+# Structured JSON access log — one line per request, written to stdout so it
+# can be scraped by Datadog / Loki / Fly Log Shipper without an agent in the
+# container. Tracks request_id, route, status, latency, and a hashed IP so we
+# preserve anomaly-detection signal without persisting raw addresses to logs.
+# Tied to the existing /api/* security model — never logs request bodies.
+# ---------------------------------------------------------------------------
+
+_ACCESS_LOGGER = logging.getLogger("safegsa.access")
+if not _ACCESS_LOGGER.handlers:
+    _h = logging.StreamHandler(stream=sys.stdout)
+    _h.setFormatter(logging.Formatter("%(message)s"))
+    _ACCESS_LOGGER.addHandler(_h)
+    _ACCESS_LOGGER.setLevel(logging.INFO)
+    _ACCESS_LOGGER.propagate = False
+
+# Salt for IP hashing — defaults to a per-process random salt so two containers
+# in a load balancer can't trivially be joined to deanonymize. Operators can
+# pin it via env to keep correlation stable across deploys (for outage triage).
+_IP_SALT = os.environ.get("SAFEGSA_IP_SALT") or uuid.uuid4().hex
+
+
+def _hash_ip(ip: str) -> str:
+    return hashlib.sha256((_IP_SALT + ip).encode("utf-8")).hexdigest()[:16]
+
+
+@app.before_request
+def _begin_request_log():
+    g._safegsa_req_started = time.perf_counter()
+    # X-Request-ID conventional; generate one if absent so traces correlate
+    # across reverse-proxy hops without forcing edge config.
+    g._safegsa_request_id = (
+        request.headers.get("x-request-id")
+        or uuid.uuid4().hex[:16]
+    )
+
+
+@app.after_request
+def _emit_access_log(resp: Response) -> Response:
+    try:
+        started = getattr(g, "_safegsa_req_started", None)
+        latency_ms = int((time.perf_counter() - started) * 1000) if started else 0
+        ip = _client_ip()
+        record = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "level": "info",
+            "logger": "access",
+            "request_id": getattr(g, "_safegsa_request_id", ""),
+            "method": request.method,
+            "path": request.path,
+            "status": resp.status_code,
+            "latency_ms": latency_ms,
+            "ip_hash": _hash_ip(ip),
+            "ua": (request.headers.get("user-agent") or "")[:160],
+            "ref": (request.headers.get("referer") or "")[:160],
+            "size": resp.calculate_content_length() or 0,
+            "version": APP_VERSION,
+        }
+        _ACCESS_LOGGER.info(json.dumps(record, separators=(",", ":")))
+        resp.headers.setdefault("X-Request-ID", record["request_id"])
+    except Exception as err:  # pragma: no cover — logging must never break a response
+        app.logger.warning("access log emit failed: %s", err)
+    return resp
 
 
 # ---------------------------------------------------------------------------
@@ -357,6 +425,61 @@ def tiers_view():
         app_name=APP_NAME,
         tiers=TIERS_POLICY,
         matrix=TIERS_MATRIX,
+    )
+
+
+# ---------------------------------------------------------------------------
+# /about — trust-signal + lead-capture surface. Federal-procurement buyers
+# expect to vet the people behind a tool before sharing program data; this
+# page closes that gap without requiring a sales call.
+# ---------------------------------------------------------------------------
+
+ABOUT_PRINCIPLES: list[dict[str, str]] = [
+    {
+        "title": "Built around the actual rule text",
+        "body": "Every artifact maps to a line in GSAR 552.239-7001, NIST AI RMF 1.0, or EO 14110 §10. We don't invent a new framework — we make the existing one auditable.",
+    },
+    {
+        "title": "Documentation in minutes, not weeks",
+        "body": "A four-question intake produces a tier classification, model card, and required artifact list immediately. Contracting officers receive evidence the same day a system goes live.",
+    },
+    {
+        "title": "No agency data leaves your tenant",
+        "body": "Assessment inputs are persisted to the contractor's own data volume. We never train on submitted answers, and admin export endpoints are token-gated and disabled by default.",
+    },
+    {
+        "title": "Designed for small primes and subs",
+        "body": "If you carry compliance work without a dedicated CISO or compliance counsel, SafeGSA collapses a binder of work into a single review surface your CO can read in under ten minutes.",
+    },
+]
+
+ABOUT_FAQ: list[dict[str, str]] = [
+    {
+        "q": "Is SafeGSA on the FedRAMP marketplace?",
+        "a": "Not yet — we're targeting FedRAMP Tailored / Moderate sponsorship through a launch partner in FY27. Today's MVP is appropriate for documenting Low and Limited tier systems; High and Critical tier deployments should keep their artifacts inside the agency's authorized boundary.",
+    },
+    {
+        "q": "Does SafeGSA generate the model card itself, or is it a checklist?",
+        "a": "It generates the card. POST a system spec and the classifier answers to /api/generate/model-card and you get an 8-section GSAR/NIST-shaped Markdown artifact with tier-aware text — re-test cadence, log retention, and CO notification windows all scale with risk tier.",
+    },
+    {
+        "q": "How is this different from a Vanta-style SOC 2 tool?",
+        "a": "Vanta and Drata are oriented around commercial controls (SOC 2, ISO 27001). SafeGSA targets the federal AI safeguarding stack — GSAR 552.239-7001, NIST AI RMF, EO 14110, OMB M-24-10 — and produces the artifacts a contracting officer expects, not the artifacts an auditor for a private board expects.",
+    },
+    {
+        "q": "What happens if the guidance changes?",
+        "a": "When a clause amendment or new agency directive lands, the underlying classifier and model-card template are versioned and re-deployed. Existing audit binders stay valid as point-in-time evidence; new assessments inherit the updated text.",
+    },
+]
+
+
+@app.get("/about")
+def about_view():
+    return render_template(
+        "about.html",
+        app_name=APP_NAME,
+        principles=ABOUT_PRINCIPLES,
+        faq=ABOUT_FAQ,
     )
 
 
@@ -726,6 +849,7 @@ def sitemap():
         ("/dashboard", "0.7"),
         ("/assess", "0.9"),
         ("/tiers", "0.8"),
+        ("/about", "0.6"),
     ]
     urls = "\n".join(
         f"  <url><loc>{SITE_URL.rstrip('/')}{p}</loc><lastmod>{today}</lastmod><priority>{prio}</priority></url>"
