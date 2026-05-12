@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from flask import Flask, Response, g, jsonify, render_template, request
+from flask_compress import Compress
 
 APP_NAME = "SafeGSA"
 APP_TAGLINE = "AI safeguarding compliance for federal contractors"
@@ -42,6 +43,28 @@ START_TS = time.time()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["JSON_SORT_KEYS"] = False
+
+# ---------------------------------------------------------------------------
+# Gzip compression — Flask-Compress watches the Accept-Encoding header and
+# compresses text/HTML/JSON/XML/CSS/JS responses above ~500 bytes. For the
+# marketing landing + Tailwind-from-CDN setup, this typically cuts HTML
+# payload 65–75% with no measurable CPU cost at our request rates.
+# Skip CSV downloads (already large/binary-ish) and short responses.
+# ---------------------------------------------------------------------------
+app.config["COMPRESS_MIMETYPES"] = [
+    "text/html",
+    "text/css",
+    "text/xml",
+    "text/plain",
+    "application/json",
+    "application/javascript",
+    "application/xml",
+    "application/x-yaml",
+]
+app.config["COMPRESS_LEVEL"] = 6
+app.config["COMPRESS_MIN_SIZE"] = 500
+app.config["COMPRESS_ALGORITHM"] = ["br", "gzip"]
+Compress(app)
 
 
 # ---------------------------------------------------------------------------
@@ -138,6 +161,78 @@ def _client_ip() -> str:
     if xff:
         return xff.split(",")[0].strip()
     return request.headers.get("x-real-ip") or request.remote_addr or "unknown"
+
+
+# ---------------------------------------------------------------------------
+# CSRF — Origin/Referer check on state-changing requests.
+# We don't issue session cookies, so a same-origin enforcement on POSTs is the
+# right MVP defense: a victim's browser will send the attacker's Origin when
+# auto-posting a forged form, and we reject it. Tokens are the upgrade path
+# once we add authenticated sessions.
+# Allow-list extra origins (e.g., a preview environment) via env. Tests can
+# opt out by setting SAFEGSA_ORIGIN_CHECK=off.
+# ---------------------------------------------------------------------------
+
+_ORIGIN_CHECK_ENABLED = os.environ.get("SAFEGSA_ORIGIN_CHECK", "on").strip().lower() != "off"
+_ORIGIN_ALLOWLIST = {
+    o.strip().rstrip("/").lower()
+    for o in os.environ.get("SAFEGSA_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+}
+
+
+def _allowed_origin(origin: str) -> bool:
+    """Match an Origin/Referer-derived origin against host + env allow-list."""
+    if not origin:
+        return False
+    origin = origin.rstrip("/").lower()
+    # Match this request's own host (covers http vs https + non-standard ports).
+    host_url = request.host_url.rstrip("/").lower()
+    if origin == host_url:
+        return True
+    # Also match the bare scheme://host form regardless of trailing path.
+    if origin.startswith(host_url + "/") or host_url.startswith(origin + "/"):
+        return True
+    return origin in _ORIGIN_ALLOWLIST
+
+
+def _check_csrf_origin() -> Response | None:
+    """Return a 403 Response if the POST's Origin/Referer is cross-origin.
+
+    Order: prefer the Origin header (sent by browsers on POST/PUT/DELETE).
+    Fall back to Referer-derived origin. If neither is present we permit the
+    request — server-to-server callers (curl, CI smoke tests, monitoring
+    probes) won't send Origin and shouldn't be blocked by this check.
+    """
+    if not _ORIGIN_CHECK_ENABLED:
+        return None
+    if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+        return None
+
+    origin = (request.headers.get("origin") or "").strip()
+    if not origin:
+        ref = (request.headers.get("referer") or "").strip()
+        if ref:
+            # Derive scheme://host[:port] from the Referer.
+            try:
+                from urllib.parse import urlsplit
+                parts = urlsplit(ref)
+                if parts.scheme and parts.netloc:
+                    origin = f"{parts.scheme}://{parts.netloc}"
+            except Exception:  # pragma: no cover — defensive
+                origin = ""
+
+    if not origin:
+        # No Origin and no Referer — likely a non-browser client. Permit.
+        return None
+
+    if _allowed_origin(origin):
+        return None
+
+    app.logger.warning("csrf origin reject path=%s origin=%s", request.path, origin)
+    resp = jsonify({"ok": False, "error": "Cross-origin request denied"})
+    resp.status_code = 403
+    return resp
 
 
 # ---------------------------------------------------------------------------
@@ -485,6 +580,9 @@ def about_view():
 
 @app.post("/api/assess")
 def api_assess():
+    csrf = _check_csrf_origin()
+    if csrf is not None:
+        return csrf
     ip = _client_ip()
     ok, retry_after = _take_token("assess", ip, max_per_window=12, window_s=60)
     if not ok:
@@ -527,6 +625,9 @@ def api_assess():
 
 @app.post("/api/lead")
 def api_lead():
+    csrf = _check_csrf_origin()
+    if csrf is not None:
+        return csrf
     ip = _client_ip()
     ok, retry_after = _take_token("lead", ip, max_per_window=5, window_s=60)
     if not ok:
@@ -652,6 +753,9 @@ def _render_model_card(meta: dict[str, Any], result: dict[str, Any]) -> str:
 
 @app.post("/api/generate/model-card")
 def api_generate_model_card():
+    csrf = _check_csrf_origin()
+    if csrf is not None:
+        return csrf
     ip = _client_ip()
     ok, retry_after = _take_token("model_card", ip, max_per_window=8, window_s=60)
     if not ok:
@@ -831,6 +935,8 @@ def health():
         },
         "config": {
             "admin_token_configured": bool(ADMIN_TOKEN),
+            "origin_check_enabled": _ORIGIN_CHECK_ENABLED,
+            "compression_enabled": True,
             "data_dir": str(DATA_DIR),
         },
     }
@@ -896,6 +1002,158 @@ def _apply_security_headers(resp: Response) -> Response:
     for k, v in _SECURITY_HEADERS.items():
         resp.headers.setdefault(k, v)
     return resp
+
+
+# ---------------------------------------------------------------------------
+# Cache-Control — route-aware caching policy. CDN-friendly long-lived caching
+# for immutable static assets; short-lived browser caching for HTML; explicit
+# no-store for API and admin endpoints so an upstream cache never serves a
+# stale lead/assessment payload (or a credentialed admin response).
+# ---------------------------------------------------------------------------
+
+@app.after_request
+def _apply_cache_control(resp: Response) -> Response:
+    path = request.path or ""
+
+    # /static/ — Flask's default static handler sets `no-cache`, which is
+    # appropriate during development but defeats CDN caching in prod. We
+    # override here. Filenames are stable + low-churn marketing assets, and
+    # a hard reload still works for cache invalidation.
+    if path.startswith("/static/") and resp.status_code < 400:
+        resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return resp
+
+    # Don't override an explicit Cache-Control set by a route handler.
+    if resp.headers.get("Cache-Control"):
+        return resp
+
+    # Errors / redirects — let clients refetch quickly.
+    if resp.status_code >= 400:
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    if path.startswith("/api/") or path in ("/health", "/metrics"):
+        # Never cache API, lead/assess writes, or monitoring scrapes.
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+    if path in ("/sitemap.xml", "/robots.txt"):
+        # Crawler hints — refresh hourly is plenty.
+        resp.headers["Cache-Control"] = "public, max-age=3600"
+        return resp
+
+    # HTML routes (/, /dashboard, /assess, /tiers, /about, etc.) — short cache,
+    # always revalidate. Lets a CDN absorb burst traffic without freezing the
+    # content for users when we ship copy edits.
+    resp.headers["Cache-Control"] = "public, max-age=300, must-revalidate"
+    return resp
+
+
+# ---------------------------------------------------------------------------
+# Prometheus / OpenMetrics scrape endpoint — exposes the same counters as
+# /health, but in the line-based text format Datadog Agent + Prometheus +
+# Grafana Agent can ingest without a JSON parser. Adds tier-bucketed
+# assessment counters so the SOC dashboard can spot a spike in
+# High/Critical-tier intake (the most likely fraud or anomaly signal).
+# Intentionally returns text/plain; CSP allows it, caches are bypassed.
+# ---------------------------------------------------------------------------
+
+def _assessments_by_tier() -> dict[str, int]:
+    """Cheap counter — scans the JSONL once per /metrics scrape.
+
+    At expected scrape cadence (15–60s) and assessment volume (<10k rows for
+    months), this is faster than maintaining a separate index and survives a
+    container restart without warm-up. Once the row count justifies it, swap
+    in a sqlite materialized counter; the interface stays the same.
+    """
+    counts = {"Low": 0, "Limited": 0, "High": 0, "Critical": 0, "_unknown": 0}
+    if not ASSESS_FILE.exists():
+        return counts
+    try:
+        with ASSESS_FILE.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    counts["_unknown"] += 1
+                    continue
+                tier = str(rec.get("tier") or "_unknown")
+                if tier not in counts:
+                    counts["_unknown"] += 1
+                else:
+                    counts[tier] += 1
+    except OSError:
+        pass
+    return counts
+
+
+@app.get("/metrics")
+def metrics():
+    now = time.time()
+    storage_ok = 1 if _data_dir_writable() else 0
+    leads_total = _count_jsonl_lines(LEAD_FILE)
+    assess_total = _count_jsonl_lines(ASSESS_FILE)
+    by_tier = _assessments_by_tier()
+
+    lines: list[str] = []
+
+    def add(name: str, help_text: str, mtype: str, samples: list[tuple[str, float]]) -> None:
+        lines.append(f"# HELP {name} {help_text}")
+        lines.append(f"# TYPE {name} {mtype}")
+        for labels, value in samples:
+            suffix = f"{{{labels}}}" if labels else ""
+            # Render ints without a decimal so Prom parsers stay happy with counts.
+            if isinstance(value, int) or float(value).is_integer():
+                lines.append(f"{name}{suffix} {int(value)}")
+            else:
+                lines.append(f"{name}{suffix} {value}")
+
+    add(
+        "safegsa_info",
+        "Build identity (always 1).",
+        "gauge",
+        [(f'version="{APP_VERSION}",app="{APP_NAME}"', 1)],
+    )
+    add(
+        "safegsa_uptime_seconds",
+        "Seconds since the worker started.",
+        "gauge",
+        [("", int(now - START_TS))],
+    )
+    add(
+        "safegsa_data_dir_writable",
+        "1 if the data volume accepts writes, 0 otherwise.",
+        "gauge",
+        [("", storage_ok)],
+    )
+    add(
+        "safegsa_leads_total",
+        "Total lead submissions persisted to JSONL.",
+        "counter",
+        [("", leads_total)],
+    )
+    add(
+        "safegsa_assessments_total",
+        "Total risk-classifier assessments persisted to JSONL.",
+        "counter",
+        [("", assess_total)],
+    )
+    add(
+        "safegsa_assessments_by_tier_total",
+        "Assessments persisted, bucketed by GSAR/NIST risk tier.",
+        "counter",
+        [(f'tier="{t}"', n) for t, n in by_tier.items()],
+    )
+
+    body = "\n".join(lines) + "\n"
+    return Response(
+        body,
+        mimetype="text/plain; version=0.0.4; charset=utf-8",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 if __name__ == "__main__":
