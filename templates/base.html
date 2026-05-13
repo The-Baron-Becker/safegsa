@@ -18,16 +18,60 @@
   <meta name="twitter:title" content="{{ self.og_title() }}" />
   <meta name="twitter:description" content="{{ self.og_description() }}" />
 
-  {# JSON-LD: declares this as a SoftwareApplication so search engines render rich results. #}
+  {# JSON-LD @graph: Organization + WebSite + SoftwareApplication cross-linked
+     by @id. Organization unlocks brand SERP cards; WebSite + SearchAction
+     unlocks the sitelinks search box; SoftwareApplication keeps rich-result
+     eligibility while attributing the app to the publishing organization. #}
+  {% set site_root = request.url_root.rstrip('/') %}
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "{{ app_name }}",
-    "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Web",
-    "description": "Federal AI compliance toolkit aligned with GSAR 552.239-7001, NIST AI RMF, and EO 14110.",
-    "audience": { "@type": "Audience", "audienceType": "Federal contractors" }
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "{{ site_root }}/#organization",
+        "name": "{{ app_name }}",
+        "url": "{{ site_root }}/",
+        "logo": "{{ site_root }}/static/favicon.svg",
+        "foundingDate": "2026",
+        "description": "Compliance-as-a-service for federal AI contractors. Documentation, monitoring, and audit-ready artifacts aligned with GSAR 552.239-7001, NIST AI RMF, and EO 14110.",
+        "areaServed": "US",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "sales",
+          "availableLanguage": "English"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "{{ site_root }}/#website",
+        "url": "{{ site_root }}/",
+        "name": "{{ app_name }}",
+        "publisher": { "@id": "{{ site_root }}/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "{{ site_root }}/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "{{ site_root }}/#software",
+        "name": "{{ app_name }}",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "description": "Federal AI compliance toolkit aligned with GSAR 552.239-7001, NIST AI RMF, and EO 14110.",
+        "audience": { "@type": "Audience", "audienceType": "Federal contractors" },
+        "isPartOf": { "@id": "{{ site_root }}/#website" },
+        "publisher": { "@id": "{{ site_root }}/#organization" },
+        "offers": {
+          "@type": "Offer",
+          "priceCurrency": "USD",
+          "price": "0",
+          "description": "Free risk-tier assessment; paid tiers available on briefing"
+        }
+      }
+    ]
   }
   </script>
 

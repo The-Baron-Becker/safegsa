@@ -836,6 +836,34 @@ def api_admin_leads():
     if check is not None:
         return check
     rows = _read_jsonl(LEAD_FILE)
+    # CSV export parity with /api/admin/assessments. Sales ops drops these into
+    # SharePoint / their CRM import flow without writing JSON parsers. Columns
+    # are stable: id, at (ISO), ip (hashed), name, email, agency, message. Any
+    # extra keys persisted later get appended as `extra_<key>` so old exports
+    # never break when we add a field.
+    if request.args.get("format") == "csv":
+        base_cols = ("id", "at", "ip", "name", "email", "agency", "message")
+        extra_keys: list[str] = []
+        seen: set[str] = set(base_cols)
+        for r in rows:
+            for k in r.keys():
+                if k not in seen:
+                    seen.add(k)
+                    extra_keys.append(k)
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow([*base_cols, *[f"extra_{k}" for k in extra_keys]])
+        for r in rows:
+            writer.writerow([
+                *(r.get(c, "") for c in base_cols),
+                *(r.get(k, "") for k in extra_keys),
+            ])
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        return Response(
+            buf.getvalue(),
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="safegsa-leads-{ts}.csv"'},
+        )
     return jsonify({"ok": True, "count": len(rows), "leads": rows})
 
 
@@ -937,6 +965,9 @@ def health():
             "admin_token_configured": bool(ADMIN_TOKEN),
             "origin_check_enabled": _ORIGIN_CHECK_ENABLED,
             "compression_enabled": True,
+            "ai_crawler_block_count": len(_AI_TRAINING_CRAWLERS),
+            "leads_csv_export": True,
+            "schema_org_graph": True,
             "data_dir": str(DATA_DIR),
         },
     }
@@ -963,6 +994,50 @@ def sitemap():
     )
     body = f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}\n</urlset>\n'
     return Response(body, mimetype="application/xml")
+
+
+# robots.txt — AI-crawler policy parity with WedgeOps. Per-agent rules listed
+# BEFORE the wildcard so strict parsers hit the targeted rule first. We block
+# 11 training crawlers across the entire site; standard search crawlers
+# (Googlebot, Bingbot, DuckDuckBot) keep indexing access but are blocked from
+# /api/ and /api/admin/ endpoints. Cache-Control: public, max-age=3600 is
+# applied by _apply_cache_control() so refreshes hit hourly. Source of truth
+# lives in code (not a static file) for auditability — the bot list is
+# load-bearing for our IP posture and should be reviewed in PRs, not silently
+# edited on disk.
+_AI_TRAINING_CRAWLERS = (
+    "GPTBot",
+    "Google-Extended",
+    "CCBot",
+    "anthropic-ai",
+    "ClaudeBot",
+    "PerplexityBot",
+    "Bytespider",
+    "Amazonbot",
+    "FacebookBot",
+    "Applebot-Extended",
+    "cohere-ai",
+)
+
+
+@app.get("/robots.txt")
+def robots():
+    lines: list[str] = []
+    lines.append("# SafeGSA robots.txt")
+    lines.append("# Per-agent rules first; wildcard last. AI training crawlers blocked.")
+    lines.append("")
+    for agent in _AI_TRAINING_CRAWLERS:
+        lines.append(f"User-agent: {agent}")
+        lines.append("Disallow: /")
+        lines.append("")
+    lines.append("User-agent: *")
+    lines.append("Allow: /")
+    lines.append("Disallow: /api/")
+    lines.append("Disallow: /api/admin/")
+    lines.append("")
+    lines.append(f"Sitemap: {SITE_URL.rstrip('/')}/sitemap.xml")
+    body = "\n".join(lines) + "\n"
+    return Response(body, mimetype="text/plain; charset=utf-8")
 
 
 @app.errorhandler(404)
